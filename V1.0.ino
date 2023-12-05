@@ -5,15 +5,18 @@ SemaphoreHandle_t mutex_v;
 SemaphoreHandle_t gasSemaphore;
 TaskHandle_t HandleTaskBuzzer;
 TaskHandle_t HandleTaskGas;
+TaskHandle_t HandleTaskLightSensor;
 
 int buzzer = 3;
 int GASA0 = 2;      // Pin untuk sensor gas (gunakan pin interrupt eksternal)
 int fanPin = 4;     // Pin untuk mengendalikan kipas
 int lightSensor = A5;  // Pin untuk sensor cahaya (gunakan pin analog)
 volatile bool gasDetected = false;
+volatile bool lightDetected = false;
 
 void TaskGas(void *pvParameters);
 void TaskBuzzer(void *pvParameters);
+void TaskLightSensor(void *pvParameters);
 
 void setup() {
   Serial.begin(9600);
@@ -23,11 +26,14 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(GASA0), gasInterrupt, CHANGE); // Menghubungkan interrupt ke fungsi gasInterrupt
   mutex_v = xSemaphoreCreateMutex();
   gasSemaphore = xSemaphoreCreateBinary();
+  lightSemaphore = xSemaphoreCreateBinary();
+  
   if (mutex_v == NULL || gasSemaphore == NULL ) {
     Serial.println("Mutex or Semaphore can not be created");
   }
   xTaskCreate(TaskGas, "GasSensor", 128, NULL, 1, &HandleTaskGas);
   xTaskCreate(TaskBuzzer, "BuzzerAlarm", 128, NULL, 3, &HandleTaskBuzzer);
+  xTaskCreate(TaskLightSensor, "LightSensor", 128, NULL, 1, &HandleTaskLightSensor);
 }
 
 void loop() {
@@ -54,21 +60,22 @@ void TaskGas(void *pvParameters) {
   }
 }
   
-  int lightValue = analogRead(lightSensor);
-  
-  if (lightValue < 800) {  // Ubah nilai ambang batas sesuai dengan kondisi cahaya di sekitar
-    gasDetected = false;
-    digitalWrite(fanPin, LOW); // Matikan kipas saat cahaya terang
-    noTone(buzzer); // Matikan bunyi buzzer
-    Serial.println("Cahaya terang. Kipas dimatikan.");
-  } else {
-    if (gasDetected) {
-      digitalWrite(fanPin, HIGH); // Hidupkan kipas jika gas terdeteksi
-      tone(buzzer, 2000, 500); // Bunyikan buzzer jika gas terdeteksi
-      Serial.println("Gas terdeteksi! Buzzer dan kipas dihidupkan.");
+ void TaskLightSensor(void *pvParameters) {
+  while (1) {
+    xSemaphoreTake(mutex_v, portMAX_DELAY);
+    int lightValue = analogRead(lightSensor);
+    if (lightValue > 800) {
+      lightDetected = true;
+      xSemaphoreGive(lightSemaphore);
+    } else {
+      lightDetected = false;
+      xSemaphoreTake(lightSemaphore, portMAX_DELAY);
     }
+    xSemaphoreGive(mutex_v);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
+    }
 
 void gasInterrupt() {
   if (digitalRead(GASA0) == HIGH) {
