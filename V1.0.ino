@@ -3,6 +3,8 @@
 
 SemaphoreHandle_t mutex_v;
 SemaphoreHandle_t gasSemaphore;
+SemaphoreHandle_t lightSemaphore;
+TaskHandle_t HandleTaskFan;
 TaskHandle_t HandleTaskBuzzer;
 TaskHandle_t HandleTaskGas;
 TaskHandle_t HandleTaskLightSensor;
@@ -15,6 +17,7 @@ volatile bool gasDetected = false;
 volatile bool lightDetected = false;
 
 void TaskGas(void *pvParameters);
+void TaskFan(void *pvParameters);
 void TaskBuzzer(void *pvParameters);
 void TaskLightSensor(void *pvParameters);
 
@@ -32,8 +35,11 @@ void setup() {
     Serial.println("Mutex or Semaphore can not be created");
   }
   xTaskCreate(TaskGas, "GasSensor", 128, NULL, 1, &HandleTaskGas);
+  xTaskCreate(TaskFan, "FanControl", 128, NULL, 2, &HandleTaskFan);
   xTaskCreate(TaskBuzzer, "BuzzerAlarm", 128, NULL, 3, &HandleTaskBuzzer);
   xTaskCreate(TaskLightSensor, "LightSensor", 128, NULL, 1, &HandleTaskLightSensor);
+ 
+  vTaskStartScheduler();
 }
 
 void loop() {
@@ -56,6 +62,32 @@ void TaskGas(void *pvParameters) {
       vTaskPrioritySet(NULL, 1); // Dynamic priority change
     }
 
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+}
+
+  void TaskFan(void *pvParameters) {
+  while (1) {
+    xSemaphoreTake(mutex_v, portMAX_DELAY);
+    if (gasDetected) {
+      digitalWrite(fanPin, HIGH); // Hidupkan kipas jika gas terdeteksi
+    } else if (lightDetected && analogRead(lightSensor) > 800) {
+      digitalWrite(fanPin, LOW); // Matikan kipas jika gas tidak terdeteksi dan cahaya lebih dari 800
+    }
+    xSemaphoreGive(mutex_v);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+
+void TaskBuzzer(void *pvParameters) {
+  while (1) {
+    xSemaphoreTake(mutex_v, portMAX_DELAY);
+    if (gasDetected) {
+      tone(buzzer, 2000, 500);
+    } else {
+      noTone(buzzer);
+    }
+    xSemaphoreGive(mutex_v);
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
