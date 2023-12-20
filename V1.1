@@ -22,7 +22,7 @@ void loop() {
     noTone(buzzer); // Matikan bunyi buzzer
     Serial.println("Cahaya terang. Kipas dimatikan.");
   } else {
-    if (gasDetected) {
+    if (gasDetected > 150) {
       digitalWrite(fanPin, HIGH); // Hidupkan kipas jika gas terdeteksi
       tone(buzzer, 2000, 500); // Bunyikan buzzer jika gas terdeteksi
       Serial.println("Gas terdeteksi! Buzzer dan kipas dihidupkan.");
@@ -34,4 +34,12 @@ void loop() {
   Serial.print("Sensor Gas: ");
   Serial.println(gasValue);
   delay(1000);  // Tunggu 1 detik sebelum membaca nilai sensor gas lagi
+}
+
+void gasInterrupt() {
+  if (digitalRead(GASA0) == HIGH) {
+    gasDetected = true;
+  } else {
+    gasDetected = false;
+  }
 }
