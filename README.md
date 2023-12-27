@@ -5,7 +5,9 @@ This project is programmed in Arduino Mega and utilities a MQ-7 sensor to detect
 
 
 Finite State Machine
-![FSM drawio](https://github.com/ranicapriyani/Smart-Detection-Smoking-Area/assets/133627301/a1c183c9-4dc1-42eb-9b1f-6cb9b06a744c)
+![WhatsApp Image 2023-12-27 at 21 33 44](https://github.com/ranicapriyani/Smart-Detection-Smoking-Area/assets/54729555/47cd4e79-f7c1-457c-aefa-aa517ce3ffb5)
+
 
 Flowchart
-![Flowchart](https://github.com/ranicapriyani/Smart-Detection-Smoking-Area/assets/133627301/f737e253-bc4d-41e5-a63b-4b09fde255c7)
+
+![WhatsApp Image 2023-12-27 at 21 09 28](https://github.com/ranicapriyani/Smart-Detection-Smoking-Area/assets/54729555/73b54d6d-fd39-49a8-b8e1-6df1cd699e41)
